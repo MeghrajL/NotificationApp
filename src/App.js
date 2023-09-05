@@ -8,6 +8,8 @@
 import React, {useEffect} from 'react';
 import messaging from '@react-native-firebase/messaging';
 import {PermissionsAndroid} from 'react-native';
+import PushNotification from 'react-native-push-notification';
+
 import {
   SafeAreaView,
   ScrollView,
@@ -30,6 +32,7 @@ import {
   requestUserPermission,
   notificationListener,
 } from './NotificationService';
+import ForegroundHandler from './ForegroundHandler.android';
 
 function Section({children, title}) {
   const isDarkMode = useColorScheme() === 'dark';
@@ -65,6 +68,55 @@ function App() {
     );
     notificationListener();
   }, []);
+
+  useEffect(() => {
+    const unsubscribe = messaging().onMessage(remoteMessage => {
+      console.log('handle in foreground', remoteMessage);
+      const {notification, messageId} = remoteMessage;
+
+      PushNotification.localNotification({
+        channelId: 'local',
+        messageId: messageId,
+        message: notification?.body,
+        title: notification?.title,
+        soundName: 'default',
+        vibrate: true,
+        playSound: true,
+      });
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    PushNotification.createChannel({
+      channelId: 'local', // (required)
+      channelName: 'My channel', // (required)
+      channelDescription: 'A channel to categorise your notifications', // (optional) default: undefined.
+      soundName: 'default', // (optional) See `soundName` parameter of `localNotification` function
+      importance: 4, // (optional) default: 4. Int value of the Android notification importance
+      vibrate: true, // (optional) default: true. Creates the default vibration patten if true.
+    });
+    PushNotification.configure({
+      onRegister: function (token) {
+        console.log('TOKEN:', token);
+      },
+
+      onNotification: function (notification) {
+        console.log('NOTIFICATION:', notification);
+      },
+
+      permissions: {
+        alert: true,
+        badge: true,
+        sound: true,
+      },
+
+      popInitialNotification: true,
+
+      requestPermissions: true,
+    });
+  }, []);
+
   const isDarkMode = useColorScheme() === 'dark';
 
   const backgroundStyle = {
@@ -85,6 +137,7 @@ function App() {
           style={{
             backgroundColor: isDarkMode ? Colors.black : Colors.white,
           }}>
+          <ForegroundHandler />
           <Section title="Step One">
             Edit <Text style={styles.highlight}>App.tsx</Text> to change this
             screen and then come back to see your edits.

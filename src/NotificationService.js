@@ -44,7 +44,7 @@ export const notificationListener = async () => {
       }
     });
 
-  messaging().onMessage(async remoteMessage => {
-    console.log('A new FCM message arrived!', remoteMessage);
-  });
+  //   messaging().onMessage(async remoteMessage => {
+  //     console.log('A new FCM message arrived!', remoteMessage);
+  //   });
 };
